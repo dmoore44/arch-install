@@ -35,8 +35,8 @@ arch-chroot /mnt /bin/bash <<EOF
 # set initial hostname
 echo "archlinux-$(date -I)" >/etc/hostname
 
-# set initial timezone to America/Los_Angeles
-ln -s /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+# set initial timezone to America/New_York
+ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
 
 # set initial locale
 locale >/etc/locale.conf
