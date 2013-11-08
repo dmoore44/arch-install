@@ -10,20 +10,21 @@ parted -s /dev/sda mkpart primary 0% 100m
 parted -s /dev/sda mkpart primary 100m 100%
 
 # make filesystems
-# /boot
-mkfs.ext3 /dev/sda1
 # /
-mkfs.ext3 /dev/sda2
+mkfs.ext4 /dev/sda1
+# /home
+mkfs.btrfs /dev/sda2
 
 # set up /mnt
-mount /dev/sda2 /mnt
-mkdir /mnt/boot
-mount /dev/sda1 /mnt/boot
+mount /dev/sda1 /mnt
+mkdir /mnt/home
+mount /dev/sda2 /mnt/home
 
 # install base packages (take a coffee break if you have slow internet)
-pacstrap /mnt base base-devel
+pacstrap /mnt base 
 
-# install syslinux
+# install gptfdisk and syslinux
+arch-chroot /mnt pacman -S gptfdisk 
 arch-chroot /mnt pacman -S syslinux
 
 # generate fstab
@@ -32,8 +33,21 @@ genfstab -p /mnt >>/mnt/etc/fstab
 # chroot
 arch-chroot /mnt /bin/bash <<EOF
 
+# set static IP
+cp /etc/netctl/examples/ethernet-static /etc/netctl/net-config
+cat > /etc/netctl/net-config << EOL
+CONNECTION='ethernet'
+DESCRIPTION='A basic static ethernet connection using iproute'
+INTERFACE='enp0s3'
+IP='static'
+ADDR='143.231.189.185'
+ROUTES=('143.231.189.0/24 via 143.231.189.1')
+GATEWAY='143.231.189.1'
+DNS=('143.231.249.194')
+EOL
+
 # set initial hostname
-echo "archlinux-$(date -I)" >/etc/hostname
+echo "blackarch" >/etc/hostname
 
 # set initial timezone to America/New_York
 ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
@@ -41,7 +55,6 @@ ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
 # set initial locale
 locale >/etc/locale.conf
 echo "en_US.UTF-8 UTF-8" >>/etc/locale.gen
-echo "en_US ISO-8859-1" >>/etc/locale.gen
 locale-gen
 
 # no modifications to mkinitcpio.conf should be needed
@@ -61,6 +74,6 @@ echo root:root | chpasswd
 EOF
 
 # unmount
-umount /mnt/{boot,}
+umount -R /mnt
 
 echo "Done! Unmount the CD image from the VM, then type 'reboot'."
